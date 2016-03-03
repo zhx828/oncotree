@@ -2,6 +2,7 @@ package org.mskcc.oncotree;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.oauth2.client.EnableOAuth2Sso;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import springfox.documentation.service.ApiInfo;
@@ -11,6 +12,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @SpringBootApplication
 @EnableSwagger2
+@EnableOAuth2Sso
 public class OncotreeApplication  extends SpringBootServletInitializer{
 
     public static void main(String[] args) {

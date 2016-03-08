@@ -4,4 +4,4 @@ target
 mvnw
 mvnw.cmd
 oncotree.iml
-application.yaml
+application.properties

@@ -5,3 +5,4 @@ mvnw
 mvnw.cmd
 oncotree.iml
 application.properties
+application.yml

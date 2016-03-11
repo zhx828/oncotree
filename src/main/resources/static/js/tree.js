@@ -47,75 +47,77 @@ var tree = (function () {
             .append("svg:g")
             .attr("transform", "translate(" + m[3] + "," + 300 + ")");
 
-        d3.tsv("tumor_types.txt", function (csv) {
-            var rootDatum = new UniqueTreeNodeDatum();
-            rootDatum.name = 'Tissue';
+      $.get('/user').success(function() {
+        d3.tsv("/api/tumor_types.txt", function (csv) {
+          var rootDatum = new UniqueTreeNodeDatum();
+          rootDatum.name = 'Tissue';
 
-            treeNode[rootDatum.name] = {};
-            csv.forEach(function (row) {
-                var node = treeNode[rootDatum.name];
-                for (var col in row) {
-                    var type = row[col];
-                    var acronymMatches;
-                    var acronymRegex = /\((\w+)\)/g;
+          treeNode[rootDatum.name] = {};
+          csv.forEach(function (row) {
+            var node = treeNode[rootDatum.name];
+            for (var col in row) {
+              var type = row[col];
+              var acronymMatches;
+              var acronymRegex = /\((\w+)\)/g;
 
-                    //Ignore specific columns
-                    if (['metamaintype', 'metacolor'].indexOf(col) !== -1) break;
+              //Ignore specific columns
+              if (['metamaintype', 'metacolor'].indexOf(col) !== -1) break;
 
-                    if (!type) break;
+              if (!type) break;
 
-                    if (!(type in node)) {
-                        node[type] = {};
-                    }
+              if (!(type in node)) {
+                node[type] = {};
+              }
 
-                    if (!(type in uniqueTreeNode)) {
-                        uniqueTreeNode[type] = new UniqueTreeNodeDatum();
-                        uniqueTreeNode[type].name = type;
+              if (!(type in uniqueTreeNode)) {
+                uniqueTreeNode[type] = new UniqueTreeNodeDatum();
+                uniqueTreeNode[type].name = type;
 
-                        acronymMatches = acronymRegex.exec(type);
-                        if (acronymMatches instanceof Array && acronymMatches[1]) {
-                            uniqueTreeNode[type].acronym = acronymMatches[1];
-                        }
-
-                        if(row.hasOwnProperty('metamaintype')) {
-                            uniqueTreeNode[type].mainType = row.metamaintype;
-                        }
-
-                        if(row.hasOwnProperty('metacolor')) {
-                            uniqueTreeNode[type].color = row.metacolor;
-                        }
-                        
-                        if(row.hasOwnProperty('metanci')){
-                        	uniqueTreeNode[type].nci = row.metanci;
-                        }
-                        
-                        if(row.hasOwnProperty('metaumls')){
-                        	uniqueTreeNode[type].umls = row.metaumls;
-                        }
-                        
-                    }
-                    node = node[type];
+                acronymMatches = acronymRegex.exec(type);
+                if (acronymMatches instanceof Array && acronymMatches[1]) {
+                  uniqueTreeNode[type].acronym = acronymMatches[1];
                 }
-            });
 
-            var json = formatTree(rootDatum, treeNode);
-            build(json);
-            var dups = searchDupAcronym();
-
-            if (Object.keys(dups).length > 0) {
-                var htmlStr = '<table class="table">';
-                for (var key in dups) {
-                    htmlStr += "<tr><td>" + key + "</td><td>" + dups[key].join('<br/>') + '</td><tr>';
+                if(row.hasOwnProperty('metamaintype')) {
+                  uniqueTreeNode[type].mainType = row.metamaintype;
                 }
-                htmlStr += '</table>';
-                $('#summary-duplicates p').html(htmlStr);
-            } else {
-                $('#summary-duplicates').css('display', 'none');
+
+                if(row.hasOwnProperty('metacolor')) {
+                  uniqueTreeNode[type].color = row.metacolor;
+                }
+
+                if(row.hasOwnProperty('metanci')){
+                  uniqueTreeNode[type].nci = row.metanci;
+                }
+
+                if(row.hasOwnProperty('metaumls')){
+                  uniqueTreeNode[type].umls = row.metaumls;
+                }
+
+              }
+              node = node[type];
             }
-            $("#summary-info").text(function () {
-                return "( " + numOfTumorTypes + " tumor type" + ( numOfTumorTypes === 1 ? "" : "s" ) + " from " + numOfTissues + " tissue" + ( numOfTissues === 1 ? "" : "s" ) + " )";
-            });
+          });
+
+          var json = formatTree(rootDatum, treeNode);
+          build(json);
+          var dups = searchDupAcronym();
+
+          if (Object.keys(dups).length > 0) {
+            var htmlStr = '<table class="table">';
+            for (var key in dups) {
+              htmlStr += "<tr><td>" + key + "</td><td>" + dups[key].join('<br/>') + '</td><tr>';
+            }
+            htmlStr += '</table>';
+            $('#summary-duplicates p').html(htmlStr);
+          } else {
+            $('#summary-duplicates').css('display', 'none');
+          }
+          $("#summary-info").text(function () {
+            return "( " + numOfTumorTypes + " tumor type" + ( numOfTumorTypes === 1 ? "" : "s" ) + " from " + numOfTissues + " tissue" + ( numOfTissues === 1 ? "" : "s" ) + " )";
+          });
         });
+      });
     }
 
     function formatTree(treeDatum, treeNode) {

@@ -16,8 +16,8 @@ import java.io.InputStream;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Controller
-@RequestMapping(value = "/tumor_types.txt", produces = {APPLICATION_JSON_VALUE})
-@Api(value = "/tumor_types.txt", description = "the tumor_types.txt API")
+@RequestMapping(value = "/api/tumor_types.txt", produces = {APPLICATION_JSON_VALUE})
+@Api(value = "/api/tumor_types.txt", description = "the tumor_types.txt API")
 @javax.annotation.Generated(value = "class io.swagger.codegen.languages.SpringMVCServerCodegen", date = "2016-02-25T20:42:41.075Z")
 public class TumorTypesTxtApi {
 

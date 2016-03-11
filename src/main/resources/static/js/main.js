@@ -49,6 +49,12 @@ $(document).ready(function(){
 	    		OutJS.backToTop();
 	    	}
 		});
+      
+      $('#google-logout').click(function() {
+        $.post('/logout', function(result) {
+          console.log('result: ', result);
+        });
+      });
     }   
 
     function initQtips() {

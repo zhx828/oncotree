@@ -1,13 +1,9 @@
 package org.mskcc.oncotree;
 
-import static com.google.common.collect.Lists.newArrayList;
-
-//import org.mskcc.oncotree.oauth2.google.DefaultUserAuthenticationConverter;
-//import org.mskcc.oncotree.oauth2.google.GoogleAccessTokenConverter;
-//import org.mskcc.oncotree.oauth2.google.GoogleTokenServices;
+import org.mskcc.oncotree.oauth2.google.GoogleAccessTokenConverter;
 import org.mskcc.oncotree.oauth2.google.GoogleProfile;
+import org.mskcc.oncotree.oauth2.google.GoogleTokenServices;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.ResourceServerProperties;
@@ -21,21 +17,18 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.client.DefaultOAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2ClientContext;
-import org.springframework.security.oauth2.client.OAuth2RestOperations;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientAuthenticationProcessingFilter;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
 import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
-import org.springframework.security.oauth2.client.token.AccessTokenRequest;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
+import org.springframework.security.oauth2.common.AuthenticationScheme;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
-import org.springframework.security.oauth2.common.AuthenticationScheme;
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
+import org.springframework.security.oauth2.provider.token.DefaultUserAuthenticationConverter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -54,7 +47,6 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import javax.annotation.Resource;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -63,11 +55,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Collections;
+import java.util.*;
+
+import static com.google.common.collect.Lists.newArrayList;
+
+//import org.mskcc.oncotree.oauth2.google.DefaultUserAuthenticationConverter;
+//import org.mskcc.oncotree.oauth2.google.GoogleAccessTokenConverter;
+//import org.mskcc.oncotree.oauth2.google.GoogleTokenServices;
 
 @SpringBootApplication
 @EnableSwagger2
@@ -79,13 +73,13 @@ public class OncotreeApplication extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private Environment env;
-    
+
     @Autowired
     private OAuth2ClientContext oauth2ClientContext;
 
     OAuth2RestTemplate oAuth2RestTemplate;
-    
-    @RequestMapping({"/user", "/me"})
+
+    @RequestMapping({"/user", "/me" })
     public GoogleProfile user(Principal principal) {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("name", principal.getName());
@@ -99,7 +93,7 @@ public class OncotreeApplication extends WebSecurityConfigurerAdapter {
         ResponseEntity<GoogleProfile> forEntity = oAuth2RestTemplate.getForEntity(url, GoogleProfile.class);
         return forEntity.getBody();
     }
-    
+
     public static void main(String[] args) {
         SpringApplication.run(OncotreeApplication.class, args);
     }
@@ -107,26 +101,17 @@ public class OncotreeApplication extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         // @formatter:off	
-        http.antMatcher("/**")
+        http
             .authorizeRequests()
-            .antMatchers("/", "/login**", "/webjars/**").permitAll()
+            .antMatchers("/", "/login**", "/resources/**").permitAll()
+            .antMatchers("/api/tumor_types.txt").permitAll()
             .anyRequest().authenticated()
-            .and().exceptionHandling().authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/"))
+            .and().exceptionHandling().authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login.html"))
             .and().logout().deleteCookies("remove").logoutUrl("/logout").logoutSuccessUrl("/").permitAll()
             .and().csrf().csrfTokenRepository(csrfTokenRepository())
             .and().addFilterAfter(csrfHeaderFilter(), CsrfFilter.class)
             .addFilterBefore(ssoFilter(), BasicAuthenticationFilter.class);
-        
-        http.antMatcher("/**")
-            .authorizeRequests()
-            .antMatchers("/tumorTypes", "/css/**", "/fonts/**", "/js/**").permitAll();
 
-        http
-            .formLogin()
-            .loginPage("/")
-            .defaultSuccessUrl("/")
-//            .successHandler(successHandler())
-            .permitAll();
         // @formatter:on
     }
 
@@ -136,7 +121,7 @@ public class OncotreeApplication extends WebSecurityConfigurerAdapter {
         handler.setUseReferer(true);
         return handler;
     }
-    
+
     @Configuration
     @EnableResourceServer
     protected static class ResourceServerConfiguration
@@ -204,7 +189,7 @@ public class OncotreeApplication extends WebSecurityConfigurerAdapter {
 //    public DefaultUserAuthenticationConverter defaultUserAuthenticationConverter() {
 //        return new DefaultUserAuthenticationConverter();
 //    }
-    
+
     @Bean
     public OAuth2ProtectedResourceDetails googleResource(ClientResources clientResources) {
         AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();

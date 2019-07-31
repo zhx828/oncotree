@@ -6,13 +6,13 @@ var tree = (function () {
     var umls_base_uri = 'https://ncim.nci.nih.gov/ncimbrowser/ConceptReport.jsp?code=';
 
     var m = [20, 120, 20, 50],
-        w = 500 - m[1] - m[3],
-        h = 500 - m[0] - m[2],
+        w = 1000 - m[1] - m[3],
+        h = 1000 - m[0] - m[2],
         i = 20,
         fontSize = '12px',
         root;
 
-    var tree, diagonal, vis, numOfTumorTypes = 0, numOfTissues = 0;
+    var layout, tree, diagonal, vis, numOfTumorTypes = 0, numOfTissues = 0;
 
     var oncotreeCodesToNames = {}; // used to find duplicate codes
 
@@ -44,6 +44,8 @@ var tree = (function () {
         this.history = ''; // comma delimited string
         this.hasRevocations = false;
         this.number = 0;
+        var size = Math.ceil(Math.random() * 20)  + 5;
+        this.size = [size, size];
     }
 
     function UniqueSample() {
@@ -162,7 +164,7 @@ var tree = (function () {
             //     }
             // }
 
-            for (let item in codesObject) {
+            for (var item in codesObject) {
                 if (codesObject.hasOwnProperty(item)) {
                     if (item === childNode.code) {
                         childNode.number = codesObject[item];
@@ -188,9 +190,6 @@ var tree = (function () {
     }
 
     function initDataAndTree() {
-
-        tree = d3.layout.tree()
-            .nodeSize([34, null]);
 
         diagonal = d3.svg.diagonal()
             .projection(function (d) {
@@ -269,7 +268,13 @@ var tree = (function () {
         root.y0 = 0;
         // Initialize the display to show a few nodes.
         root.children.forEach(toggleAll);
-        update(root);
+        layout = d3.flextree()
+          .spacing(function() {
+            return 10;
+          });
+        tree = layout.hierarchy(root);
+        layout(tree);
+        update(tree);
         numOfTissues = root.children.length;
         root.children.forEach(searchLeaf);
         treeBuildComplete = true;
@@ -279,7 +284,7 @@ var tree = (function () {
         var duration = d3.event && d3.event.altKey ? 5000 : 500;
         //IE translate does not have comma to seperate the x, y. Instead, it uses space.
         var translateY = Number(vis.attr('transform').split(/[,\s]/)[1].split(')')[0]);
-        var nodes = tree.nodes(root).reverse();
+        var nodes = tree.nodes;
         var afterTranslateY;
         var overStep = false;
         var minX = 0;
@@ -296,13 +301,13 @@ var tree = (function () {
             vis.transition()
                 .duration(duration)
                 .attr('transform', 'translate(' + m[3] + ',' + afterTranslateY + ')');
-            nodes = tree.nodes(root).reverse();
+            nodes = tree.nodes;
         } else if (minX + 50 < translateY) {
             afterTranslateY = minX + 50;
             vis.transition()
                 .duration(duration)
                 .attr('transform', 'translate(' + m[3] + ',' + afterTranslateY + ')');
-            nodes = tree.nodes(root).reverse();
+            nodes = tree.nodes;
         }
 
         //Indicate the left side depth for specific level (circal point as center)
@@ -315,7 +320,7 @@ var tree = (function () {
 
         //Calculate maximum length of selected nodes in different levels
         nodes.forEach(function (d) {
-            var _nameLength = d.name.length * 6 + 50;
+            var _nameLength = d.data.name.length * 6 + 50;
 
             if (d.depth !== 0) {
                 if (!leftDepth.hasOwnProperty(d.depth)) {
@@ -336,49 +341,49 @@ var tree = (function () {
         });
 
         //Calculate the transform information for each node.
-        nodes.forEach(function (d) {
-            if (d.depth === 0) {
-                d.y = 5;
-            } else {
-                var _y = 0,
-                    _length = d.depth;
-
-                for (var i = 1; i <= _length; i++) {
-                    if (leftDepth[i] === 0) {
-                        //Give constant depth if no point has child or has showed child
-                        if(rightDepth[i - 1]) {
-                            _y += rightDepth[i - 1];
-                        }else{
-                            _y += 50;
-                        }
-                    } else {
-                        if (i > 1) {
-                            _y += leftDepth[i] + rightDepth[i - 1];
-                            if(leftDepth[i] > 0 && rightDepth[i - 1] > 0) {
-                                _y -= 50;
-                            } else {
-                                _y -= 0;
-                            }
-                        } else {
-                            _y += leftDepth[i];
-                        }
-                    }
-                }
-                d.y = _y;
-            }
-        });
+        // nodes.forEach(function (d) {
+        //     if (d.depth === 0) {
+        //         d.y = 5;
+        //     } else {
+        //         var _y = 0,
+        //             _length = d.depth;
+        //
+        //         for (var i = 1; i <= _length; i++) {
+        //             if (leftDepth[i] === 0) {
+        //                 //Give constant depth if no point has child or has showed child
+        //                 if(rightDepth[i - 1]) {
+        //                     _y += rightDepth[i - 1];
+        //                 }else{
+        //                     _y += 50;
+        //                 }
+        //             } else {
+        //                 if (i > 1) {
+        //                     _y += leftDepth[i] + rightDepth[i - 1];
+        //                     if(leftDepth[i] > 0 && rightDepth[i - 1] > 0) {
+        //                         _y -= 50;
+        //                     } else {
+        //                         _y -= 0;
+        //                     }
+        //                 } else {
+        //                     _y += leftDepth[i];
+        //                 }
+        //             }
+        //         }
+        //         d.y = _y;
+        //     }
+        // });
 
         // Update the nodes…
         var node = vis.selectAll("g.node")
             .data(nodes, function (d) {
-                return d.id || (d.id = ++i);
+                return d.data.id || (d.data.id = ++i);
             });
 
         // Enter any new nodes at the parent's previous position.
         var nodeEnter = node.enter().append("svg:g")
             .attr("class", "node")
             .attr("transform", function (d) {
-                return "translate(" + source.y0 + "," + source.x0 + ")";
+                return "translate(" + source.y + "," + source.x + ")";
             })
             .on("click", function (d) {
                 toggle(d);
@@ -386,12 +391,14 @@ var tree = (function () {
             });
 
         nodeEnter.append("svg:circle")
-            .attr("r", 4.5)
+            .attr("r", function(d) {
+              return d.size[0]/2 - 1.5;
+            })
             .style("stroke", function (d) {
-                return d.color;
+                return d.data.color;
             })
             .style("fill", function (d) {
-                return (d._children ? d.color : "#fff");
+                return (d.children ? d.data.color : "#fff");
             });
 
         var nodeContent = '';
@@ -404,95 +411,99 @@ var tree = (function () {
             .attr("text-anchor", function (d) {
                 return d.children || d._children ? "end" : "start";
             })
+          .attr('fill', function(d) {
+            return d.children ? 'red': 'black';
+          })
             .text(function (d) {
-                var _position = '';
-                var _qtipContent = '';
-                if((d.children || d._children) && d.depth > 1){
-                    _position = {my:'bottom right',at:'top left', viewport: $(window)};
-                }else {
-                    _position = {my:'bottom left',at:'top right', viewport: $(window)};
-                }
-
-                var nci_links = [];
-                if (typeof d.nci !== 'undefined' && d.nci.length > 0) {
-                    $.each(d.nci, function( index , value ) {
-                        nci_links.push(getNCILink(value));
-                    });
-                } else {
-                    // will have 'Not Available' link
-                    nci_links.push(getNCILink(""));
-                }
-
-                var umls_links = [];
-                if (typeof d.umls !== 'undefined' && d.umls.length > 0) {
-                    $.each(d.umls, function( index, value ) {
-                        umls_links.push(getUMLSLink(value));
-                    });
-                } else {
-                    // will have 'Not Available' link
-                    umls_links.push(getUMLSLink(""));
-                }
-
-                _qtipContent += '<b>Code:</b> ' + d.code +
-
-                    //clipboard JS is not supported in Safari.
-                    ((is_safari && !is_chrome) ?
-                            '<button style="margin-left: 5px;" class="btn btn-light btn-sm" ' +
-                            ' disabled>"Copy" is not available in Safari</button>' :
-                            '<button style="margin-left: 5px;" class="clipboard-copy btn btn-light btn-sm" ' +
-                            'data-clipboard-text="' + d.code + '"  ' +
-                            '>Copy</button>'
-                    ) +
-                    '<br/>';
-                _qtipContent += '<b>Name:</b> ' + d.name.replace(/\(\w+\)$/gi, '') + '<br/>';
-                _qtipContent += '<b>Main type:</b> ' + d.mainType + '<br/>';
-                _qtipContent += '<b>Number of samples:</b> ' + d.number + '<br/>';
-                _qtipContent += '<b>NCI:</b> ' + nci_links.join(",") + '<br/>';
-                _qtipContent += '<b>UMLS:</b> ' + umls_links.join(",") + '<br/>';
-                _qtipContent += '<b>Color:</b> ' + (d.color||'LightBlue') + '<br/>';
-                if (typeof d.history !== 'undefined' && d.history != '') {
-                    _qtipContent += '<b>Previous codes:</b> ' + d.history  + '<br/>';
-                    if (typeof d.hasRevocations !== 'undefined' && d.hasRevocations) {
-                        _qtipContent += '<text style="padding-left: 5px;">* Use of codes shown in red is now discouraged.</text>';
-                    }
-                }
-                $(this).qtip({
-                    content:{text: _qtipContent},
-                    style: { classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
-                    hide: {fixed: true, delay: 100},
-                    position: _position,
-                    events: {
-                        render: function(element, api) {
-                            $(api.elements.content).find('.clipboard-copy').click(function() {
-                                $(this).qtip({
-                                    content: 'Copied',
-                                    style: {classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
-                                    show: {ready: true},
-                                    position: {
-                                        my: 'bottom center',
-                                        at: 'top center',
-                                        viewport: $(window)
-                                    },
-                                    events: {
-                                        show: function(event, api) {
-                                            setTimeout(function() {
-                                                api.destroy();
-                                            }, 1000);
-                                        }
-                                    }
-                                })
-                            });
-                        }
-                    }
-                });
-
-                if (d.depth === 1) {
-                    return d.name.replace(/\(\w+\)/gi, '');
-                } else {
-                    return d.name;
-                }
+              return d.data.name;
+                // var _position = '';
+                // var _qtipContent = '';
+                // if((d.children || d._children) && d.depth > 1){
+                //     _position = {my:'bottom right',at:'top left', viewport: $(window)};
+                // }else {
+                //     _position = {my:'bottom left',at:'top right', viewport: $(window)};
+                // }
+                //
+                // var nci_links = [];
+                // if (typeof d.nci !== 'undefined' && d.nci.length > 0) {
+                //     $.each(d.nci, function( index , value ) {
+                //         nci_links.push(getNCILink(value));
+                //     });
+                // } else {
+                //     // will have 'Not Available' link
+                //     nci_links.push(getNCILink(""));
+                // }
+                //
+                // var umls_links = [];
+                // if (typeof d.umls !== 'undefined' && d.umls.length > 0) {
+                //     $.each(d.umls, function( index, value ) {
+                //         umls_links.push(getUMLSLink(value));
+                //     });
+                // } else {
+                //     // will have 'Not Available' link
+                //     umls_links.push(getUMLSLink(""));
+                // }
+                //
+                // _qtipContent += '<b>Code:</b> ' + d.code +
+                //
+                //     //clipboard JS is not supported in Safari.
+                //     ((is_safari && !is_chrome) ?
+                //             '<button style="margin-left: 5px;" class="btn btn-light btn-sm" ' +
+                //             ' disabled>"Copy" is not available in Safari</button>' :
+                //             '<button style="margin-left: 5px;" class="clipboard-copy btn btn-light btn-sm" ' +
+                //             'data-clipboard-text="' + d.code + '"  ' +
+                //             '>Copy</button>'
+                //     ) +
+                //     '<br/>';
+                // _qtipContent += '<b>Name:</b> ' + d.name.replace(/\(\w+\)$/gi, '') + '<br/>';
+                // _qtipContent += '<b>Main type:</b> ' + d.mainType + '<br/>';
+                // _qtipContent += '<b>Number of samples:</b> ' + d.number + '<br/>';
+                // _qtipContent += '<b>NCI:</b> ' + nci_links.join(",") + '<br/>';
+                // _qtipContent += '<b>UMLS:</b> ' + umls_links.join(",") + '<br/>';
+                // _qtipContent += '<b>Color:</b> ' + (d.color||'LightBlue') + '<br/>';
+                // if (typeof d.history !== 'undefined' && d.history != '') {
+                //     _qtipContent += '<b>Previous codes:</b> ' + d.history  + '<br/>';
+                //     if (typeof d.hasRevocations !== 'undefined' && d.hasRevocations) {
+                //         _qtipContent += '<text style="padding-left: 5px;">* Use of codes shown in red is now discouraged.</text>';
+                //     }
+                // }
+                // $(this).qtip({
+                //     content:{text: _qtipContent},
+                //     style: { classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
+                //     hide: {fixed: true, delay: 100},
+                //     position: _position,
+                //     events: {
+                //         render: function(element, api) {
+                //             $(api.elements.content).find('.clipboard-copy').click(function() {
+                //                 $(this).qtip({
+                //                     content: 'Copied',
+                //                     style: {classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
+                //                     show: {ready: true},
+                //                     position: {
+                //                         my: 'bottom center',
+                //                         at: 'top center',
+                //                         viewport: $(window)
+                //                     },
+                //                     events: {
+                //                         show: function(event, api) {
+                //                             setTimeout(function() {
+                //                                 api.destroy();
+                //                             }, 1000);
+                //                         }
+                //                     }
+                //                 })
+                //             });
+                //         }
+                //     }
+                // });
+                //
+                // if (d.depth === 1) {
+                //     return d.name.replace(/\(\w+\)/gi, '');
+                // } else {
+                //     return d.name;
+                // }
             })
-            .style("fill-opacity", 1e-6);
+            // .style("fill-opacity", 1e-6);
 
         var clipboard = new ClipboardJS('.clipboard-copy.btn');
 
@@ -504,11 +515,11 @@ var tree = (function () {
             });
 
         nodeUpdate.select("circle")
-            .attr("r", function (d) {
-               return d.number.toString().length * 4;
+            .attr("r", function(d) {
+              return d.size[0]/2 - 1.5;
             })
             .style("fill", function (d) {
-                return d._children ? d.color : "#fff";
+                return d._children ? d.data.color : "#fff";
             });
 
         nodeUpdate.select("text")
@@ -524,8 +535,8 @@ var tree = (function () {
             .remove();
 
         nodeExit.select("circle")
-            .attr("r", function (d) {
-                return d.number.toString().length * 3;
+            .attr("r", function(d) {
+              return d.size[0]/2 - 1.5;
             });
 
         nodeExit.select("text")
@@ -541,7 +552,7 @@ var tree = (function () {
         link.enter().insert("svg:path", "g")
             .attr("class", "link")
             .attr("d", function (d) {
-                var o = {x: source.x0, y: source.y0};
+                var o = {x: source.x, y: source.y};
                 return diagonal({source: o, target: o});
             })
             .transition()
@@ -573,13 +584,13 @@ var tree = (function () {
 
     // Toggle children.
     function toggle(d) {
-        if (d.children) {
-            d._children = d.children;
-            d.children = null;
-        } else {
-            d.children = d._children;
-            d._children = null;
-        }
+        // if (d.children) {
+        //     d._children = d.children;
+        //     d.children = null;
+        // } else {
+        //     d.children = d._children;
+        //     d._children = null;
+        // }
     }
 
     function toggleAll(d) {
@@ -614,7 +625,7 @@ var tree = (function () {
     }
 
     function resizeSVG(rightDepth) {
-        var nodes = tree.nodes(root).reverse(),
+        var nodes = tree.nodes,
             maxHeight = 0,
             maxWidth = 0,
             lastDepth = 0;
@@ -640,13 +651,13 @@ var tree = (function () {
         if (500 < maxWidth) {
             d3.select("#tree").select("svg").attr("width", maxWidth);
         } else {
-            d3.select("#tree").select("svg").attr("width", 500);
+            d3.select("#tree").select("svg").attr("width", w);
         }
 
         if (500 < maxHeight) {
             d3.select("#tree").select("svg").attr("height", maxHeight);
         } else {
-            d3.select("#tree").select("svg").attr("height", 500);
+            d3.select("#tree").select("svg").attr("height", w);
         }
     }
 
@@ -689,8 +700,8 @@ var tree = (function () {
             if (searchKey === '') {
                 d3.select(this).style('fill', 'black');
             } else {
-                if (d.name.toLowerCase().indexOf(searchKey) !== -1 ||
-                    (typeof d.history !== 'undefined' && d.history != '' && d.history.toLowerCase().split(",").indexOf(searchKey) !== -1)) {
+                if (d.data.name.toLowerCase().indexOf(searchKey) !== -1 ||
+                    (typeof d.data.history !== 'undefined' && d.data.history != '' && d.history.toLowerCase().split(",").indexOf(searchKey) !== -1)) {
                     d3.select(this).style('fill', 'red');
                 } else {
                     d3.select(this).style('fill', 'black');

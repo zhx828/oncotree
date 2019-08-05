@@ -384,7 +384,8 @@ var tree = (function () {
         // Update the nodes…
         var node = vis.selectAll("g.node")
             .data(nodes, function (d) {
-                return d.data.id || (d.data.id = ++i);
+                //return d.data.id || (d.data.id = ++i);
+                return d.id || (d.id = ++i);
             });
 
         // Enter any new nodes at the parent's previous position.
@@ -412,6 +413,7 @@ var tree = (function () {
         var nodeText = nodeEnter.append("svg:text")
             .attr("x", function (d) {
                 return d.data.children || d.data._children ? -20 : 17;
+                //return d.children || d._children ? -20 : 10;
             })
             .attr("dy", ".35em")
             .attr('font-size', fontSize)
@@ -425,7 +427,7 @@ var tree = (function () {
                  return d.data.name;
                 var _position = '';
                 var _qtipContent = '';
-                if((d.children || d.data._children) && d.depth > 1){
+                if ((d.children || d.data._children) && d.depth > 1){
                     _position = {my:'bottom right',at:'top left', viewport: $(window)};
                 }else {
                     _position = {my:'bottom left',at:'top right', viewport: $(window)};
@@ -468,7 +470,7 @@ var tree = (function () {
                 _qtipContent += '<b>NCI:</b> ' + nci_links.join(",") + '<br/>';
                 _qtipContent += '<b>UMLS:</b> ' + umls_links.join(",") + '<br/>';
                 _qtipContent += '<b>Color:</b> ' + (d.data.color||'LightBlue') + '<br/>';
-                if (typeof d.history !== 'undefined' && d.history != '') {
+                if (typeof d.data.history !== 'undefined' && d.data.history != '') {
                     _qtipContent += '<b>Previous codes:</b> ' + d.history  + '<br/>';
                     if (typeof d.hasRevocations !== 'undefined' && d.hasRevocations) {
                         _qtipContent += '<text style="padding-left: 5px;">* Use of codes shown in red is now discouraged.</text>';

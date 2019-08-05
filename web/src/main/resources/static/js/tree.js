@@ -44,9 +44,7 @@ var tree = (function () {
         this.history = ''; // comma delimited string
         this.hasRevocations = false;
         this.number = 0;
-        var size = Math.ceil(Math.random() * 20)  + 5;
-        //var size = this.number;
-        this.size = [size, size];
+        this.size = [1, 1];
     }
 
     function UniqueSample() {
@@ -91,6 +89,10 @@ var tree = (function () {
 
     processSample(codesObject);
     console.log(codesObject);
+
+    function getNodeRadius(sampleNumber) {
+      return sampleNumber.toString().length * 3 + 2;
+    }
 
     function process_children(parentNode, childData, codesObject) {
         // childData is always for a new unique node
@@ -155,7 +157,7 @@ var tree = (function () {
         oncotreeCodesToNames[childNode.code].push(childNode.name);
 
         // add new node to children list of parentNode
-        parentNode.children.push(childNode);
+        parentNode._children.push(childNode);
 
         // now process this node's children
         if (childData.hasOwnProperty('children')) {
@@ -175,17 +177,19 @@ var tree = (function () {
 
             var codesSortedByName =  getOncotreeCodeKeysSortedByName(childData.children);
             if (codesSortedByName.length > 0) {
-                childNode.children = [];
+                childNode._children = [];
                 codesSortedByName.forEach(function (code) {
                     // now childNode's children are added
                     process_children(childNode, childData.children[code], codesObject);
                 });
 
                 var total = 0;
-                for (i = 0; i in childNode.children; i++) {
-                    total += childNode.children[i].number;
+                for (i = 0; i in childNode._children; i++) {
+                    total += childNode._children[i].number;
                 }
                 childNode.number += total;
+                var width = getNodeRadius(childNode.number) * 2;
+                childNode.size =[width, width];
             }
         }
     }
@@ -227,7 +231,7 @@ var tree = (function () {
 
                 var rootNode = new UniqueTreeNodeDatum();
                 rootNode.name = 'Tissue';
-                rootNode.children = []
+                rootNode._children = []
 
                 getOncotreeCodeKeysSortedByName(oncotree_json.TISSUE.children).forEach(function (code) {
                     var childData = oncotree_json.TISSUE.children[code];
@@ -270,18 +274,16 @@ var tree = (function () {
         root = json;
         root.x0 = h / 2;
         root.y0 = 0;
-        // Initialize the display to show a few nodes.
-        root.children.forEach(toggleAll);
         layout = d3.flextree()
-            .spacing(function(d){
+            .spacing(function(d) {
                 return d.data.number.toString().length * 4 + 5;
-            })
-            .children(data => data.children);
-            // .children(function (d) {
-            //     d.children = data.children;
-            // });
+            });
+        toggle(root);
+        
+        // Show the level 1 nodes
+        // root.children.forEach(toggle);
         tree = layout.hierarchy(root);
-            //.children(data => data.children);
+
         layout(tree);
         update(tree);
         numOfTissues = tree.children.length;
@@ -395,11 +397,15 @@ var tree = (function () {
             })
             .on("click", function (d) {
                 toggle(d);
+                d = layout.hierarchy(d);
+                layout(d);
                 update(d);
             });
 
         nodeEnter.append("svg:circle")
-            .attr("r", 4.5)
+            .attr("r", function(d) {
+              return d.size[0] / 2;
+            })
             .style("stroke", function (d) {
                 return d.data.color;
             })
@@ -422,7 +428,6 @@ var tree = (function () {
                 return d.children ? 'red': 'black';
             })
              .text(function (d) {
-                 return d.data.name;
                 var _position = '';
                 var _qtipContent = '';
                 if((d.children || d.data._children) && d.depth > 1){
@@ -432,8 +437,8 @@ var tree = (function () {
                 }
 
                 var nci_links = [];
-                if (typeof d.nci !== 'undefined' && d.nci.length > 0) {
-                    $.each(d.nci, function( index , value ) {
+                if (typeof d.data.nci !== 'undefined' && d.data.nci.length > 0) {
+                    $.each(d.data.nci, function( index , value ) {
                         nci_links.push(getNCILink(value));
                     });
                 } else {
@@ -442,8 +447,8 @@ var tree = (function () {
                 }
 
                 var umls_links = [];
-                if (typeof d.umls !== 'undefined' && d.umls.length > 0) {
-                    $.each(d.umls, function( index, value ) {
+                if (typeof d.data.umls !== 'undefined' && d.data.umls.length > 0) {
+                    $.each(d.data.umls, function( index, value ) {
                         umls_links.push(getUMLSLink(value));
                     });
                 } else {
@@ -468,9 +473,9 @@ var tree = (function () {
                 _qtipContent += '<b>NCI:</b> ' + nci_links.join(",") + '<br/>';
                 _qtipContent += '<b>UMLS:</b> ' + umls_links.join(",") + '<br/>';
                 _qtipContent += '<b>Color:</b> ' + (d.data.color||'LightBlue') + '<br/>';
-                if (typeof d.history !== 'undefined' && d.history != '') {
-                    _qtipContent += '<b>Previous codes:</b> ' + d.history  + '<br/>';
-                    if (typeof d.hasRevocations !== 'undefined' && d.hasRevocations) {
+                if (typeof d.data.history !== 'undefined' && d.data.history != '') {
+                    _qtipContent += '<b>Previous codes:</b> ' + d.data.history  + '<br/>';
+                    if (typeof d.data.hasRevocations !== 'undefined' && d.data.hasRevocations) {
                         _qtipContent += '<text style="padding-left: 5px;">* Use of codes shown in red is now discouraged.</text>';
                     }
                 }
@@ -527,9 +532,8 @@ var tree = (function () {
             });
 
         nodeUpdate.select("circle")
-            .attr("r", function (d) {
-               //return d.size[0]/2 - 1.5;
-                return d.data.number.toString().length * 4;
+            .attr("r", function(d) {
+              return d.size[0] / 2;
             })
             .style("fill", function (d) {
                 return d.data._children ? d.data.color : "#fff";
@@ -549,9 +553,8 @@ var tree = (function () {
             .remove();
 
         nodeExit.select("circle")
-            .attr("r", function (d) {
-                //return d.size[0]/2 - 1.5;
-                return d.data.number.toString().length * 4;
+            .attr("r", function(d) {
+              return d.size[0] / 2;
             });
 
         nodeExit.select("text")
@@ -560,7 +563,7 @@ var tree = (function () {
         // Update the links…
         var link = vis.selectAll("path.link")
             .data(tree.links(nodes), function (d) {
-                return d.target.id;
+                return d.target.data.id;
             });
 
         // Enter any new links at the parent's previous position.
@@ -600,8 +603,11 @@ var tree = (function () {
     // Toggle children.
     function toggle(d) {
         if (d.children) {
-            d._children = d.children;
+            d.data._children = d.children;
             d.children = null;
+        } else if (d.data) {
+            d.children = d.data._children;
+            d.data._children = null;
         } else {
             d.children = d._children;
             d._children = null;
@@ -616,8 +622,8 @@ var tree = (function () {
     }
 
     function stretchAll(d) {
-        if (d._children) {
-            d._children.forEach(stretchAll);
+        if (d.data._children) {
+            d.data._children.forEach(stretchAll);
             toggle(d);
         }
     }

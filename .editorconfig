@@ -29,10 +29,10 @@ insert_final_newline = false
 trim_trailing_whitespace = false
 
 [*.js]
-indent_size = 2
+indent_size = 4
 
 [*.html]
-indent_size = 2
+indent_size = 4
 
 # Formats for HTML files only
 [**.html]

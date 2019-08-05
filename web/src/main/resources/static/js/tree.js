@@ -418,6 +418,7 @@ var tree = (function () {
         var nodeText = nodeEnter.append("svg:text")
             .attr("x", function (d) {
                 return d.data.children || d.data._children ? -20 : 17;
+                //return d.children || d._children ? -20 : 10;
             })
             .attr("dy", ".35em")
             .attr('font-size', fontSize)
@@ -430,7 +431,7 @@ var tree = (function () {
              .text(function (d) {
                 var _position = '';
                 var _qtipContent = '';
-                if((d.children || d.data._children) && d.depth > 1){
+                if ((d.children || d.data._children) && d.depth > 1){
                     _position = {my:'bottom right',at:'top left', viewport: $(window)};
                 }else {
                     _position = {my:'bottom left',at:'top right', viewport: $(window)};

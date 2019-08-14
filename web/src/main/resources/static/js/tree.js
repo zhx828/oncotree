@@ -33,7 +33,6 @@ var tree = (function () {
         return (typeof umlsCode !== 'undefined' && umlsCode != '') ? '<a class="qtip-link" href="' + umls_base_uri + umlsCode + '" target="_blank">' + umlsCode + '</a>' : 'Not Available';
     }
 
-
     function UniqueTreeNodeDatum() {
         this.name = '';
         this.code = '';
@@ -162,7 +161,7 @@ var tree = (function () {
             //     }
             // }
 
-            for (let item in codesObject) {
+            for (var item in codesObject) {
                 if (codesObject.hasOwnProperty(item)) {
                     if (item === childNode.code) {
                         childNode.number = codesObject[item];
@@ -189,8 +188,50 @@ var tree = (function () {
 
     function initDataAndTree() {
 
+        var slider = document.getElementById("myRange");
+        var output = document.getElementById("demo");
+        var sliderNum = slider.value;
+        output.innerHTML = slider.value; 
+
+        slider.addEventListener('input', sliderChange);
+
+        function sliderChange() {
+            output.innerHTML = slider.value;
+
+            slider.onmouseup = function () {
+                sliderNum = slider.value;
+
+                //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
+                //take function out of process children - register event at place where slider is drawn
+                //check if tree exists then if not get rid of it and call tree again
+                //can push childNode to new json if it fits parameters
+                //make sure that tissue is included (even though it doesn't have a number)
+
+                var nodes = tree.nodes(root);
+                var newTree = [];
+                var newTreeStr;
+
+                nodes.forEach(function (d) {
+                    if (d.number > sliderNum) {
+                        //console.log(d.code);
+                        newTree.push(d);
+                    }
+                    //console.log(newTree);
+                });
+
+                console.log(newTree);
+
+                //build(newTree);
+
+                //var newTreeStr = JSON.stringify(newTree);
+                //var newTreeStr = JSON.parse(JSON.stringify(newTree));
+                //console.log(newTreeStr);
+
+            };
+        }
+
         tree = d3.layout.tree()
-            .nodeSize([34, null]);
+            .nodeSize([30, null]);
 
         diagonal = d3.svg.diagonal()
             .projection(function (d) {
@@ -218,6 +259,7 @@ var tree = (function () {
                }
 
                console.log(codesObject);
+               //console.log(sliderNum);
 
             d3.json('data/tumor_types.json',  function (oncotree_json) {
 
@@ -233,6 +275,62 @@ var tree = (function () {
 
                 build(rootNode);
                 var dups = searchDupAcronym();
+
+                // var slider = document.getElementById("myRange");
+                // var output = document.getElementById("demo");
+                // var sliderNum = slider.value;
+                // output.innerHTML = slider.value; 
+
+                // slider.addEventListener('input', sliderChange);
+
+                // function sliderChange() {
+                //     output.innerHTML = slider.value;
+
+                //     slider.onmouseup = function () {
+                //         sliderNum = slider.value;
+
+                //         //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
+                //         //take function out of process children - register event at place where slider is drawn
+                //         //check if tree exists then if not get rid of it and call tree again
+                //         //can push childNode to new json if it fits parameters
+                //         //make sure that tissue is included (even though it doesn't have a number)
+
+                //         // if (childNode.number <= sliderNum) {
+                //         //     childNode.number = -1;
+                //         // } 
+
+                //         //var nodes = tree.nodes(root).reverse();
+                //         var nodes1 = tree.nodes(root);
+                //         var newTree = [];
+                //         var newTreeStr;
+
+                //         // nodes1.forEach(function (d) {
+                //         //     if (d.number > sliderNum) {
+                //         //         //console.log(d.code);
+                //         //         newTree.push(d);
+                //         //     }
+                //         //     //console.log(newTree);
+                //         // });
+
+                //         getOncotreeCodeKeysSortedByName(oncotree_json.TISSUE.children).forEach(function (code) {
+                //             var childData = oncotree_json.TISSUE.children[code];
+                //             // these nodes all belong at root of tree
+                //             //process_children(rootNode, childData, codesObject);
+                //             if (childData.number > sliderNum) {
+                //                 //console.log(childData.name);
+                //                 newTree.push(childData);
+                //                 console.log(newTree);
+                //             }
+                //         });
+
+                //         //console.log(newTree);
+
+                //         //var newTreeStr = JSON.stringify(newTree);
+                //         //var newTreeStr = JSON.parse(JSON.stringify(newTree));
+                //         //console.log(newTreeStr);
+
+                //     };
+                // }
 
                 if (Object.keys(dups).length > 0) {
                     var htmlStr = '<table class="table">';
@@ -266,11 +364,13 @@ var tree = (function () {
     function build(json) {
         root = json;
         root.x0 = h / 2;
-        root.y0 = 0;
+        root.y0 = 0; 
+
         // Initialize the display to show a few nodes.
         root.children.forEach(toggleAll);
         update(root);
         numOfTissues = root.children.length;
+
         root.children.forEach(searchLeaf);
         treeBuildComplete = true;
     }
@@ -315,7 +415,11 @@ var tree = (function () {
 
         //Calculate maximum length of selected nodes in different levels
         nodes.forEach(function (d) {
-            var _nameLength = d.name.length * 6 + 50;
+            if (d.name !== null) {
+                var _nameLength = d.name.length * 6 + 50;
+            } else {
+                _nameLength = 1;
+            }
 
             if (d.depth !== 0) {
                 if (!leftDepth.hasOwnProperty(d.depth)) {
@@ -395,102 +499,104 @@ var tree = (function () {
             });
 
         var nodeContent = '';
+
         var nodeText = nodeEnter.append("svg:text")
             .attr("x", function (d) {
-                return d.children || d._children ? -20 : 17;
+                return d.children || d._children ? -20 : 17; 
             })
             .attr("dy", ".35em")
             .attr('font-size', fontSize)
             .attr("text-anchor", function (d) {
-                return d.children || d._children ? "end" : "start";
+                return d.children || d._children ? "end" : "start"; 
             })
             .text(function (d) {
-                var _position = '';
-                var _qtipContent = '';
-                if((d.children || d._children) && d.depth > 1){
-                    _position = {my:'bottom right',at:'top left', viewport: $(window)};
-                }else {
-                    _position = {my:'bottom left',at:'top right', viewport: $(window)};
-                }
-
-                var nci_links = [];
-                if (typeof d.nci !== 'undefined' && d.nci.length > 0) {
-                    $.each(d.nci, function( index , value ) {
-                        nci_links.push(getNCILink(value));
-                    });
-                } else {
-                    // will have 'Not Available' link
-                    nci_links.push(getNCILink(""));
-                }
-
-                var umls_links = [];
-                if (typeof d.umls !== 'undefined' && d.umls.length > 0) {
-                    $.each(d.umls, function( index, value ) {
-                        umls_links.push(getUMLSLink(value));
-                    });
-                } else {
-                    // will have 'Not Available' link
-                    umls_links.push(getUMLSLink(""));
-                }
-
-                _qtipContent += '<b>Code:</b> ' + d.code +
-
-                    //clipboard JS is not supported in Safari.
-                    ((is_safari && !is_chrome) ?
-                            '<button style="margin-left: 5px;" class="btn btn-light btn-sm" ' +
-                            ' disabled>"Copy" is not available in Safari</button>' :
-                            '<button style="margin-left: 5px;" class="clipboard-copy btn btn-light btn-sm" ' +
-                            'data-clipboard-text="' + d.code + '"  ' +
-                            '>Copy</button>'
-                    ) +
-                    '<br/>';
-                _qtipContent += '<b>Name:</b> ' + d.name.replace(/\(\w+\)$/gi, '') + '<br/>';
-                _qtipContent += '<b>Main type:</b> ' + d.mainType + '<br/>';
-                _qtipContent += '<b>Number of samples:</b> ' + d.number + '<br/>';
-                _qtipContent += '<b>NCI:</b> ' + nci_links.join(",") + '<br/>';
-                _qtipContent += '<b>UMLS:</b> ' + umls_links.join(",") + '<br/>';
-                _qtipContent += '<b>Color:</b> ' + (d.color||'LightBlue') + '<br/>';
-                if (typeof d.history !== 'undefined' && d.history != '') {
-                    _qtipContent += '<b>Previous codes:</b> ' + d.history  + '<br/>';
-                    if (typeof d.hasRevocations !== 'undefined' && d.hasRevocations) {
-                        _qtipContent += '<text style="padding-left: 5px;">* Use of codes shown in red is now discouraged.</text>';
+                
+                    var _position = '';
+                    var _qtipContent = '';
+                    if((d.children || d._children) && d.depth > 1){
+                        _position = {my:'bottom right',at:'top left', viewport: $(window)};
+                    } else {
+                        _position = {my:'bottom left',at:'top right', viewport: $(window)};
                     }
-                }
-                $(this).qtip({
-                    content:{text: _qtipContent},
-                    style: { classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
-                    hide: {fixed: true, delay: 100},
-                    position: _position,
-                    events: {
-                        render: function(element, api) {
-                            $(api.elements.content).find('.clipboard-copy').click(function() {
-                                $(this).qtip({
-                                    content: 'Copied',
-                                    style: {classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
-                                    show: {ready: true},
-                                    position: {
-                                        my: 'bottom center',
-                                        at: 'top center',
-                                        viewport: $(window)
-                                    },
-                                    events: {
-                                        show: function(event, api) {
-                                            setTimeout(function() {
-                                                api.destroy();
-                                            }, 1000);
-                                        }
-                                    }
-                                })
-                            });
+
+                    var nci_links = [];
+                    if (typeof d.nci !== 'undefined' && d.nci.length > 0) {
+                        $.each(d.nci, function( index , value ) {
+                            nci_links.push(getNCILink(value));
+                        });
+                    } else {
+                        // will have 'Not Available' link
+                        nci_links.push(getNCILink(""));
+                    }
+
+                    var umls_links = [];
+                    if (typeof d.umls !== 'undefined' && d.umls.length > 0) {
+                        $.each(d.umls, function( index, value ) {
+                            umls_links.push(getUMLSLink(value));
+                        });
+                    } else {
+                        // will have 'Not Available' link
+                        umls_links.push(getUMLSLink(""));
+                    }
+
+                    _qtipContent += '<b>Code:</b> ' + d.code +
+
+                        //clipboard JS is not supported in Safari.
+                        ((is_safari && !is_chrome) ?
+                                '<button style="margin-left: 5px;" class="btn btn-light btn-sm" ' +
+                                ' disabled>"Copy" is not available in Safari</button>' :
+                                '<button style="margin-left: 5px;" class="clipboard-copy btn btn-light btn-sm" ' +
+                                'data-clipboard-text="' + d.code + '"  ' +
+                                '>Copy</button>'
+                        ) +
+                        '<br/>';
+                    _qtipContent += '<b>Name:</b> ' + d.name.replace(/\(\w+\)$/gi, '') + '<br/>';
+                    _qtipContent += '<b>Main type:</b> ' + d.mainType + '<br/>';
+                    _qtipContent += '<b>Number of samples:</b> ' + d.number + '<br/>';
+                    _qtipContent += '<b>NCI:</b> ' + nci_links.join(",") + '<br/>';
+                    _qtipContent += '<b>UMLS:</b> ' + umls_links.join(",") + '<br/>';
+                    _qtipContent += '<b>Color:</b> ' + (d.color||'LightBlue') + '<br/>';
+                    if (typeof d.history !== 'undefined' && d.history != '') {
+                        _qtipContent += '<b>Previous codes:</b> ' + d.history  + '<br/>';
+                        if (typeof d.hasRevocations !== 'undefined' && d.hasRevocations) {
+                            _qtipContent += '<text style="padding-left: 5px;">* Use of codes shown in red is now discouraged.</text>';
                         }
                     }
-                });
+                    $(this).qtip({
+                        content:{text: _qtipContent},
+                        style: { classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
+                        hide: {fixed: true, delay: 100},
+                        position: _position,
+                        events: {
+                            render: function(element, api) {
+                                $(api.elements.content).find('.clipboard-copy').click(function() {
+                                    $(this).qtip({
+                                        content: 'Copied',
+                                        style: {classes: 'qtip-light qtip-rounded qtip-shadow qtip-grey qtip-wide'},
+                                        show: {ready: true},
+                                        position: {
+                                            my: 'bottom center',
+                                            at: 'top center',
+                                            viewport: $(window)
+                                        },
+                                        events: {
+                                            show: function(event, api) {
+                                                setTimeout(function() {
+                                                    api.destroy();
+                                                }, 1000);
+                                            }
+                                        }
+                                    })
+                                });
+                            }
+                        }
+                    });
 
-                if (d.depth === 1) {
-                    return d.name.replace(/\(\w+\)/gi, '');
-                } else {
-                    return d.name;
-                }
+                    if (d.depth === 1) {
+                        return d.name.replace(/\(\w+\)/gi, '');
+                    } else {
+                        return d.name;
+                    }
             })
             .style("fill-opacity", 1e-6);
 
@@ -505,7 +611,7 @@ var tree = (function () {
 
         nodeUpdate.select("circle")
             .attr("r", function (d) {
-               return d.number.toString().length * 4;
+                return d.number.toString().length * 3.5;
             })
             .style("fill", function (d) {
                 return d._children ? d.color : "#fff";
@@ -525,7 +631,12 @@ var tree = (function () {
 
         nodeExit.select("circle")
             .attr("r", function (d) {
-                return d.number.toString().length * 3;
+                // if (d.number >= 0) {
+                //     return d.number.toString().length * 3.5;
+                // } else if (d.number < 0) {
+                //     return 0;
+                // }
+                return d.number.toString().length * 3.5;
             });
 
         nodeExit.select("text")
@@ -580,6 +691,9 @@ var tree = (function () {
             d.children = d._children;
             d._children = null;
         }
+        // if (d.number < 0) {
+        //     d._children = null;
+        // }
     }
 
     function toggleAll(d) {

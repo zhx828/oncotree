@@ -43,6 +43,7 @@ var tree = (function () {
         this.history = ''; // comma delimited string
         this.hasRevocations = false;
         this.number = 0;
+        this.portal_link = '';
         //add portal link property
     }
 
@@ -171,6 +172,20 @@ var tree = (function () {
                     }
                 }
             }
+
+            var subNodes = [];
+                    
+            subNodes.push(childNode.code);
+            for (var i = 0; i in childNode.children; i++) {
+                subNodes.push(childNode.children[i].code);
+            }
+
+            // var subNodeStr = childNode.children.map(function(item){
+            //     return item.code;
+            // }).join(',');
+            var subNodeStr = subNodes.join(',');
+
+            childNode.portal_link = "https://www.cbioportal.org/study/summary?filterAttributeId=ONCOTREE_CODE&filterValues=" + subNodeStr + "&id=msk_impact_2017";
 
             var codesSortedByName =  getOncotreeCodeKeysSortedByName(childData.children);
             if (codesSortedByName.length > 0) {
@@ -446,25 +461,25 @@ var tree = (function () {
             }
         });
 
-        function findSubNodes(branchCode) {
-            var children1 = branchCode.children;
+        // function findSubNodes(branchCode) {
+        //     var children1 = branchCode.children;
             
-            var subNodes = [];
+        //     var subNodes = [];
                     
-            subNodes.push(branchCode.code);
-            for (var i = 0; i < children1.length; i++) {
-                subNodes.push(children1[i].code.toString());
-            }
+        //     subNodes.push(branchCode.code);
+        //     for (var i = 0; i < children1.length; i++) {
+        //         subNodes.push(children1[i].code.toString());
+        //     }
 
-            var subNodeStr = branchCode.children.map(function(item){
-                return item.code;
-            }).join(',');
-            console.log(subNodeStr);
+        //     var subNodeStr = branchCode.children.map(function(item){
+        //         return item.code;
+        //     }).join(',');
+        //     console.log(subNodeStr);
 
-            portal_url = "https://www.cbioportal.org/study/summary?filterAttributeId=ONCOTREE_CODE&filterValues=" + subNodeStr + "&id=msk_impact_2017";
-            console.log(portal_url);
-            return portal_url;
-        }
+        //     portal_url = "https://www.cbioportal.org/study/summary?filterAttributeId=ONCOTREE_CODE&filterValues=" + subNodeStr + "&id=msk_impact_2017";
+        //     console.log(portal_url);
+        //     return portal_url;
+        // }
 
         // Update the nodes…
         var node = vis.selectAll("g.node")

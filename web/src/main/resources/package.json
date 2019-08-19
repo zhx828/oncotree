@@ -43,6 +43,7 @@
     "test": "grunt test"
   },
   "dependencies": {
+    "colornames": "^1.1.1",
     "d3-flextree": "^2.1.1",
     "grunt-serve": "^0.1.6",
     "natives": "^1.1.6",

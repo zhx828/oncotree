@@ -43,6 +43,8 @@ var tree = (function () {
         this.history = ''; // comma delimited string
         this.hasRevocations = false;
         this.number = 0;
+        this.portal_link = '';
+        //add portal link property
     }
 
     function UniqueSample() {
@@ -153,6 +155,8 @@ var tree = (function () {
         // add new node to children list of parentNode
         parentNode.children.push(childNode);
 
+        //could add a new property called portal link
+
         // now process this node's children
         if (childData.hasOwnProperty('children')) {
             // for (i = 0; i < tNum.length; i++) {
@@ -169,6 +173,20 @@ var tree = (function () {
                 }
             }
 
+            var subNodes = [];
+                    
+            subNodes.push(childNode.code);
+            for (var child in childNode.children) {
+                subNodes.push(childNode.children[child].code);
+            }
+
+            // var subNodeStr = childNode.children.map(function(item){
+            //     return item.code;
+            // }).join(',');
+            var subNodeStr = subNodes.join(',');
+
+            childNode.portal_link = "https://www.cbioportal.org/study/summary?filterAttributeId=ONCOTREE_CODE&filterValues=" + subNodeStr + "&id=msk_impact_2017";
+
             var codesSortedByName =  getOncotreeCodeKeysSortedByName(childData.children);
             if (codesSortedByName.length > 0) {
                 childNode.children = [];
@@ -182,53 +200,43 @@ var tree = (function () {
                     total += childNode.children[i].number;
                 }
                 childNode.number += total;
+
+                for (var child in childNode.children) {
+                    subNodes.push(childNode.children[child].code);
+                }
+ 
+                subNodeStr = subNodes.join(',');
+
+                childNode.portal_link = "https://www.cbioportal.org/study/summary?filterAttributeId=ONCOTREE_CODE&filterValues=" + subNodeStr + "&id=msk_impact_2017";
+
             }
         }
     }
 
-    function initDataAndTree() {
+    function updateTreeJson(oldJson, threshold) {
+        
+        var newJson = _.cloneDeep(oldJson);
 
-        var slider = document.getElementById("myRange");
-        var output = document.getElementById("demo");
-        var sliderNum = slider.value;
-        output.innerHTML = slider.value; 
+        console.log(newJson);
+    
+        //newJson.children = [];
+        delete newJson.children;
 
-        slider.addEventListener('input', sliderChange);
+        //newJson.children = _.filter(oldJson.children)
 
-        function sliderChange() {
-            output.innerHTML = slider.value;
+        newJson.children = oldJson.children.filter(function (child) {
+            return child.number > threshold;
+        });
 
-            slider.onmouseup = function () {
-                sliderNum = slider.value;
-
-                //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
-                //take function out of process children - register event at place where slider is drawn
-                //check if tree exists then if not get rid of it and call tree again
-                //can push childNode to new json if it fits parameters
-                //make sure that tissue is included (even though it doesn't have a number)
-
-                var nodes = tree.nodes(root);
-                var newTree = [];
-                var newTreeStr;
-
-                nodes.forEach(function (d) {
-                    if (d.number > sliderNum) {
-                        //console.log(d.code);
-                        newTree.push(d);
-                    }
-                    //console.log(newTree);
-                });
-
-                console.log(newTree);
-
-                //build(newTree);
-
-                //var newTreeStr = JSON.stringify(newTree);
-                //var newTreeStr = JSON.parse(JSON.stringify(newTree));
-                //console.log(newTreeStr);
-
-            };
+        for (var child in newJson.children) {
+            child = updateTreeJson(child, threshold);
         }
+
+        console.log(newJson);
+        return newJson;
+    }
+
+    function initDataAndTree() {
 
         tree = d3.layout.tree()
             .nodeSize([30, null]);
@@ -245,6 +253,8 @@ var tree = (function () {
             .attr("transform", "translate(" + m[3] + "," + 300 + ")");
 
         processSample(codesObject);
+
+        var rootNode;
 
         d3.csv("data/msk-impact-oncotree.csv", function(impact_csv) {
 
@@ -263,7 +273,7 @@ var tree = (function () {
 
             d3.json('data/tumor_types.json',  function (oncotree_json) {
 
-                var rootNode = new UniqueTreeNodeDatum();
+                rootNode = new UniqueTreeNodeDatum();
                 rootNode.name = 'Tissue';
                 rootNode.children = []
 
@@ -273,64 +283,8 @@ var tree = (function () {
                     process_children(rootNode, childData, codesObject);
                 });
 
-                build(rootNode);
+                build(rootNode); //call build function with updated json data - produced by rootNode
                 var dups = searchDupAcronym();
-
-                // var slider = document.getElementById("myRange");
-                // var output = document.getElementById("demo");
-                // var sliderNum = slider.value;
-                // output.innerHTML = slider.value; 
-
-                // slider.addEventListener('input', sliderChange);
-
-                // function sliderChange() {
-                //     output.innerHTML = slider.value;
-
-                //     slider.onmouseup = function () {
-                //         sliderNum = slider.value;
-
-                //         //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
-                //         //take function out of process children - register event at place where slider is drawn
-                //         //check if tree exists then if not get rid of it and call tree again
-                //         //can push childNode to new json if it fits parameters
-                //         //make sure that tissue is included (even though it doesn't have a number)
-
-                //         // if (childNode.number <= sliderNum) {
-                //         //     childNode.number = -1;
-                //         // } 
-
-                //         //var nodes = tree.nodes(root).reverse();
-                //         var nodes1 = tree.nodes(root);
-                //         var newTree = [];
-                //         var newTreeStr;
-
-                //         // nodes1.forEach(function (d) {
-                //         //     if (d.number > sliderNum) {
-                //         //         //console.log(d.code);
-                //         //         newTree.push(d);
-                //         //     }
-                //         //     //console.log(newTree);
-                //         // });
-
-                //         getOncotreeCodeKeysSortedByName(oncotree_json.TISSUE.children).forEach(function (code) {
-                //             var childData = oncotree_json.TISSUE.children[code];
-                //             // these nodes all belong at root of tree
-                //             //process_children(rootNode, childData, codesObject);
-                //             if (childData.number > sliderNum) {
-                //                 //console.log(childData.name);
-                //                 newTree.push(childData);
-                //                 console.log(newTree);
-                //             }
-                //         });
-
-                //         //console.log(newTree);
-
-                //         //var newTreeStr = JSON.stringify(newTree);
-                //         //var newTreeStr = JSON.parse(JSON.stringify(newTree));
-                //         //console.log(newTreeStr);
-
-                //     };
-                // }
 
                 if (Object.keys(dups).length > 0) {
                     var htmlStr = '<table class="table">';
@@ -348,6 +302,44 @@ var tree = (function () {
             });
            });
 
+        var slider = document.getElementById("myRange");
+        var output = document.getElementById("demo");
+        var sliderNum = slider.value;
+        output.innerHTML = slider.value; 
+
+        slider.addEventListener('input', sliderChange);
+
+        function sliderChange() {
+            output.innerHTML = slider.value;
+
+            slider.onmouseup = function () {
+                sliderNum = slider.value;
+
+                // //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
+                // //take function out of process children - register event at place where slider is drawn
+                // //check if tree exists then if not get rid of it and call tree again
+                // //can push childNode to new json if it fits parameters
+                
+                // //make sure that tissue is included (even though it doesn't have a number)
+
+                // var newJson = {};
+
+                // var filterChildren = rootNode.children.filter(function (child) {
+                //     return child.number > sliderNum;
+                // });
+
+                // //console.log(filterChildren);
+
+                // newJson.children = filterChildren;
+                // console.log(newJson);
+
+                // updateTreeJson(rootNode, sliderNum);
+
+                // build(newJson); 
+                // //update(newJson);
+
+            };
+        }
 
     }
 
@@ -376,6 +368,16 @@ var tree = (function () {
     }
 
     function update(source) {
+        var checkbox = document.getElementById("displayNum");
+
+        var portal_url;
+
+        // checkbox.addEventListener('onclick', checkChange);
+
+        // function checkChange() {
+        //     update(root);
+        // }
+
         var duration = d3.event && d3.event.altKey ? 5000 : 500;
         //IE translate does not have comma to seperate the x, y. Instead, it uses space.
         var translateY = Number(vis.attr('transform').split(/[,\s]/)[1].split(')')[0]);
@@ -415,11 +417,7 @@ var tree = (function () {
 
         //Calculate maximum length of selected nodes in different levels
         nodes.forEach(function (d) {
-            if (d.name !== null) {
-                var _nameLength = d.name.length * 6 + 50;
-            } else {
-                _nameLength = 1;
-            }
+            var _nameLength = d.name.length * 6 + 50;
 
             if (d.depth !== 0) {
                 if (!leftDepth.hasOwnProperty(d.depth)) {
@@ -472,6 +470,26 @@ var tree = (function () {
             }
         });
 
+        // function findSubNodes(branchCode) {
+        //     var children1 = branchCode.children;
+            
+        //     var subNodes = [];
+                    
+        //     subNodes.push(branchCode.code);
+        //     for (var i = 0; i < children1.length; i++) {
+        //         subNodes.push(children1[i].code.toString());
+        //     }
+
+        //     var subNodeStr = branchCode.children.map(function(item){
+        //         return item.code;
+        //     }).join(',');
+        //     console.log(subNodeStr);
+
+        //     portal_url = "https://www.cbioportal.org/study/summary?filterAttributeId=ONCOTREE_CODE&filterValues=" + subNodeStr + "&id=msk_impact_2017";
+        //     console.log(portal_url);
+        //     return portal_url;
+        // }
+
         // Update the nodes…
         var node = vis.selectAll("g.node")
             .data(nodes, function (d) {
@@ -487,6 +505,10 @@ var tree = (function () {
             .on("click", function (d) {
                 toggle(d);
                 update(d);
+                // if (d._children == null) {
+                //     findSubNodes(d);
+                //     return portal_url;
+                // }
             });
 
         nodeEnter.append("svg:circle")
@@ -556,6 +578,18 @@ var tree = (function () {
                     _qtipContent += '<b>NCI:</b> ' + nci_links.join(",") + '<br/>';
                     _qtipContent += '<b>UMLS:</b> ' + umls_links.join(",") + '<br/>';
                     _qtipContent += '<b>Color:</b> ' + (d.color||'LightBlue') + '<br/>';
+                    //_qtipContent += '<button type = "button" id = "portal-button">Go to cBioPortal</button>' + '<br/>';
+                    //findSubNodes(d);
+                    _qtipContent += '<a href = "'+ d.portal_link + '" target = "_blank">Go to cBioPortal</a>' + '<br/>';
+                    
+                    // $("portal-button").addEventListener("onclick", function () {
+                    //     console.log(d.code);
+                    // });
+
+                    // function portalButton() {
+                    //     findSubNodes(d);
+                    //     console.log(subNodes);
+                    // }
                     if (typeof d.history !== 'undefined' && d.history != '') {
                         _qtipContent += '<b>Previous codes:</b> ' + d.history  + '<br/>';
                         if (typeof d.hasRevocations !== 'undefined' && d.hasRevocations) {
@@ -600,6 +634,67 @@ var tree = (function () {
             })
             .style("fill-opacity", 1e-6);
 
+            //find subnodes of branch -- use recursive function like update new tree
+            //put subnodes into array of codes
+
+            // function findSubNodes(branchCode) {
+            //     subNodes = [];
+            //     subNodes.push(branchCode.code);
+            //     for (var child in branchCode.children) {
+            //         subNodes.push(child.code);
+            //     }
+
+            //     for (var child1 in child.children) {
+            //         findSubNodes(child);
+            //     }
+            //     console.log(subNodes);
+            //     return subNodes;
+            // }
+            // document.getElementById("portal-button").addEventListener("click", portalButton());
+
+            // function portalButton() {
+            //     findSubNodes(d);
+            //     console.log(subNodes);
+            // }
+
+        if (checkbox.checked == true) {
+            var numDisplay = nodeEnter.append("svg:text")
+                .attr("x", function (d) {
+                    if (d.number.toString().length == 4) {
+                        return 0 - (d.number.toString().length * 4 - 4);
+                    } else if (d.number.toString().length == 1){
+                        return 0 - (d.number.toString().length * 3 - 1);
+                    } else {
+                        return 0 - (d.number.toString().length * 3 - 2); 
+                    }
+                })
+                .attr("dy", ".35em")
+                .attr('font-size', function (d) {
+                    return d.number.toString().length * 1.5 + 5;
+                })
+                .style("stroke", function (d) {
+                    //figure out contrasting text
+                    //var colorHex = toHex(d.color);
+                    var color1 = d.color.toLowerCase();
+                    if (d._children) {
+                        if (color1 === "white" || color1 === "yellow" || color1 === "lightskyblue" || color1 === "orange" || color1 === "gainsboro" || color1 === "limegreen" || color1 === "lightsalmon" || color1 === "lightblue" || color1 === "cyan" || color1 === "lightyellow" || color1 === "peachpuff") {
+                            return "#000";
+                        } else {
+                            return "#fff";
+                        }
+                    } else {
+                        return "#000";
+                    }
+                })
+                .style("stroke-width", 0.5)
+                .text(function (d) {
+                    return d.number.toString();
+                });
+
+            //use npm contrast library (install using cdn)
+            //colornames library to convert name to hex
+        }
+
         var clipboard = new ClipboardJS('.clipboard-copy.btn');
 
         // Transition nodes to their new position.
@@ -631,11 +726,6 @@ var tree = (function () {
 
         nodeExit.select("circle")
             .attr("r", function (d) {
-                // if (d.number >= 0) {
-                //     return d.number.toString().length * 3.5;
-                // } else if (d.number < 0) {
-                //     return 0;
-                // }
                 return d.number.toString().length * 3.5;
             });
 
@@ -691,9 +781,6 @@ var tree = (function () {
             d.children = d._children;
             d._children = null;
         }
-        // if (d.number < 0) {
-        //     d._children = null;
-        // }
     }
 
     function toggleAll(d) {

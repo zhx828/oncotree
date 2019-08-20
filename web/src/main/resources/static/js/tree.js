@@ -176,8 +176,8 @@ var tree = (function () {
             var subNodes = [];
                     
             subNodes.push(childNode.code);
-            for (var i = 0; i in childNode.children; i++) {
-                subNodes.push(childNode.children[i].code);
+            for (var child in childNode.children) {
+                subNodes.push(childNode.children[child].code);
             }
 
             // var subNodeStr = childNode.children.map(function(item){
@@ -200,6 +200,15 @@ var tree = (function () {
                     total += childNode.children[i].number;
                 }
                 childNode.number += total;
+
+                for (var child in childNode.children) {
+                    subNodes.push(childNode.children[child].code);
+                }
+ 
+                subNodeStr = subNodes.join(',');
+
+                childNode.portal_link = "https://www.cbioportal.org/study/summary?filterAttributeId=ONCOTREE_CODE&filterValues=" + subNodeStr + "&id=msk_impact_2017";
+
             }
         }
     }
@@ -306,28 +315,28 @@ var tree = (function () {
             slider.onmouseup = function () {
                 sliderNum = slider.value;
 
-                //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
-                //take function out of process children - register event at place where slider is drawn
-                //check if tree exists then if not get rid of it and call tree again
-                //can push childNode to new json if it fits parameters
+                // //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
+                // //take function out of process children - register event at place where slider is drawn
+                // //check if tree exists then if not get rid of it and call tree again
+                // //can push childNode to new json if it fits parameters
                 
-                //make sure that tissue is included (even though it doesn't have a number)
+                // //make sure that tissue is included (even though it doesn't have a number)
 
-                var newJson = {};
+                // var newJson = {};
 
-                var filterChildren = rootNode.children.filter(function (child) {
-                    return child.number > sliderNum;
-                });
+                // var filterChildren = rootNode.children.filter(function (child) {
+                //     return child.number > sliderNum;
+                // });
 
-                //console.log(filterChildren);
+                // //console.log(filterChildren);
 
-                newJson.children = filterChildren;
-                console.log(newJson);
+                // newJson.children = filterChildren;
+                // console.log(newJson);
 
-                updateTreeJson(rootNode, sliderNum);
+                // updateTreeJson(rootNode, sliderNum);
 
-                build(newJson); 
-                //update(newJson);
+                // build(newJson); 
+                // //update(newJson);
 
             };
         }
@@ -496,10 +505,10 @@ var tree = (function () {
             .on("click", function (d) {
                 toggle(d);
                 update(d);
-                if (d._children == null) {
-                    findSubNodes(d);
-                    return portal_url;
-                }
+                // if (d._children == null) {
+                //     findSubNodes(d);
+                //     return portal_url;
+                // }
             });
 
         nodeEnter.append("svg:circle")
@@ -571,7 +580,7 @@ var tree = (function () {
                     _qtipContent += '<b>Color:</b> ' + (d.color||'LightBlue') + '<br/>';
                     //_qtipContent += '<button type = "button" id = "portal-button">Go to cBioPortal</button>' + '<br/>';
                     //findSubNodes(d);
-                    _qtipContent += '<a href = "'+ portal_url + '" target = "_blank">Go to cBioPortal</a>' + '<br/>';
+                    _qtipContent += '<a href = "'+ d.portal_link + '" target = "_blank">Go to cBioPortal</a>' + '<br/>';
                     
                     // $("portal-button").addEventListener("onclick", function () {
                     //     console.log(d.code);

@@ -44,6 +44,7 @@ var tree = (function () {
         this.hasRevocations = false;
         this.number = 0;
         this.portal_link = '';
+        this.children = [];
         //add portal link property
     }
 
@@ -82,14 +83,12 @@ var tree = (function () {
                 }
             }
 
-            console.log(codesObject);
             return(codesObject);
         });
     }
 
     processSample(codesObject);
-    console.log(codesObject);
-
+    
     function process_children(parentNode, childData, codesObject) {
         // childData is always for a new unique node
 
@@ -159,11 +158,6 @@ var tree = (function () {
 
         // now process this node's children
         if (childData.hasOwnProperty('children')) {
-            // for (i = 0; i < tNum.length; i++) {
-            //     if (tNum[i][0] === childNode.code) {
-            //         childNode.number += tNum[i][1];
-            //     }
-            // }
 
             for (var item in codesObject) {
                 if (codesObject.hasOwnProperty(item)) {
@@ -217,15 +211,6 @@ var tree = (function () {
         
         var newJson = _.cloneDeep(oldJson);
 
-        //var newJson = oldJson;
-
-        //console.log(oldJson)
-
-        //console.log(newJson);
-    
-        //newJson.children = [];
-        //delete newJson.children;
-
         var children1 = oldJson.children;
         //console.log(children1);
 
@@ -235,14 +220,8 @@ var tree = (function () {
             return child.number > threshold;
         });
 
-        // for (var child in newJson.children) {
-        //     child = updateTreeJson(child, threshold);
-        // }
-
-        console.log(newJson);
-
-        build(newJson);
-        //return newJson;
+        //build(newJson);
+        return newJson;
     }
 
     function initDataAndTree() {
@@ -284,7 +263,7 @@ var tree = (function () {
 
                 rootNode = new UniqueTreeNodeDatum();
                 rootNode.name = 'Tissue';
-                rootNode.children = []
+                //rootNode.children = [];
 
                 getOncotreeCodeKeysSortedByName(oncotree_json.TISSUE.children).forEach(function (code) {
                     var childData = oncotree_json.TISSUE.children[code];
@@ -292,7 +271,10 @@ var tree = (function () {
                     process_children(rootNode, childData, codesObject);
                 });
 
-                build(rootNode); //call build function with updated json data - produced by rootNode
+                var newJson = updateTreeJson(rootNode, 0);
+                build(newJson);
+
+                //build(rootNode); //call build function with updated json data - produced by rootNode
                 var dups = searchDupAcronym();
 
                 if (Object.keys(dups).length > 0) {
@@ -323,30 +305,8 @@ var tree = (function () {
 
             slider.onmouseup = function () {
                 sliderNum = slider.value;
-
-                //rebuild tree whenever slider is triggered, filter json and return filtered json then pass it to build function
-                //take function out of process children - register event at place where slider is drawn
-                //check if tree exists then if not get rid of it and call tree again
-                //can push childNode to new json if it fits parameters
-                
-                //make sure that tissue is included (even though it doesn't have a number)
-
-                //var newJson = {};
-
-                // var filterChildren = rootNode.children.filter(function (child) {
-                //     return child.number > sliderNum;
-                // });
-
-                // console.log(filterChildren);
-
-                // newJson.children = filterChildren;
-                // console.log(newJson);
-                console.log(rootNode);
-
-                updateTreeJson(rootNode, sliderNum);
-
-                //build(newJson); 
-
+                var newJson1 = updateTreeJson(rootNode, sliderNum);
+                build(newJson1);
             };
         }
 

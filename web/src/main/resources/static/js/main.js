@@ -19,7 +19,7 @@ $(document).ready(function(){
     // loadVersions(function() {
     // checkURL();
     tree.init(displayed_version);
-    //setDisplayedSearch(displayed_search_term);
+    setDisplayedSearch(displayed_search_term);
     // initVersionsLink();
     initEvents();
     OutJS.backToTop();

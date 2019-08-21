@@ -14,6 +14,8 @@ var tree = (function () {
 
     var tree, diagonal, vis, numOfTumorTypes = 0, numOfTissues = 0;
 
+    //var checkbox = document.getElementById("displayNum");
+
     var oncotreeCodesToNames = {}; // used to find duplicate codes
 
     var searchResult = [];
@@ -44,7 +46,7 @@ var tree = (function () {
         this.hasRevocations = false;
         this.number = 0;
         this.portal_link = '';
-        this.children = [];
+        //this.children = [];
         //add portal link property
     }
 
@@ -263,7 +265,7 @@ var tree = (function () {
 
                 rootNode = new UniqueTreeNodeDatum();
                 rootNode.name = 'Tissue';
-                //rootNode.children = [];
+                rootNode.children = [];
 
                 getOncotreeCodeKeysSortedByName(oncotree_json.TISSUE.children).forEach(function (code) {
                     var childData = oncotree_json.TISSUE.children[code];
@@ -271,7 +273,7 @@ var tree = (function () {
                     process_children(rootNode, childData, codesObject);
                 });
 
-                var newJson = updateTreeJson(rootNode, 0);
+                var newJson = updateTreeJson(rootNode, -1);
                 build(newJson);
 
                 //build(rootNode); //call build function with updated json data - produced by rootNode
@@ -339,7 +341,17 @@ var tree = (function () {
     function update(source) {
         var checkbox = document.getElementById("displayNum");
 
-        var portal_url;
+        //displayNum(checkbox);
+
+        // checkbox.addEventListener("onclick", function () {
+        //     update(root);
+        //     if (checkbox.checked) {
+        //         //displayNum(checkbox);
+        //     }
+        //     //displayNum(checkbox);
+        //     console.log("Checkbox");
+        //     console.log(checkbox.checked);
+        // })
 
         var duration = d3.event && d3.event.altKey ? 5000 : 500;
         //IE translate does not have comma to seperate the x, y. Instead, it uses space.
@@ -448,6 +460,7 @@ var tree = (function () {
             .on("click", function (d) {
                 toggle(d);
                 update(d);
+                displayNum(checkbox);
             });
 
         nodeEnter.append("svg:circle")
@@ -563,43 +576,42 @@ var tree = (function () {
             })
             .style("fill-opacity", 1e-6);
 
-        if (checkbox.checked == true) {
-            var numDisplay = nodeEnter.append("svg:text")
-                .attr("x", function (d) {
-                    if (d.number.toString().length == 4) {
-                        return 0 - (d.number.toString().length * 4 - 4);
-                    } else if (d.number.toString().length == 1){
-                        return 0 - (d.number.toString().length * 3 - 1);
-                    } else {
-                        return 0 - (d.number.toString().length * 3 - 2); 
+            function displayNum(checkbox) {
+                if (checkbox.checked == true) {
+                    var numDisplay = nodeEnter.append("svg:text")
+                        .attr("x", function (d) {
+                            if (d.number.toString().length == 4) {
+                                return 0 - (d.number.toString().length * 4 - 4);
+                            } else if (d.number.toString().length == 1){
+                                return 0 - (d.number.toString().length * 3 - 1);
+                            } else {
+                                return 0 - (d.number.toString().length * 3 - 2); 
+                            }
+                        })
+                        .attr("dy", ".35em")
+                        .attr('font-size', function (d) {
+                            return d.number.toString().length * 1.5 + 5;
+                        })
+                        .style("stroke", function (d) {
+                            var color1 = d.color.toLowerCase();
+                            if (d._children) {
+                                if (color1 === "white" || color1 === "yellow" || color1 === "lightskyblue" || color1 === "orange" || color1 === "gainsboro" || color1 === "limegreen" || color1 === "lightsalmon" || color1 === "lightblue" || color1 === "cyan" || color1 === "lightyellow" || color1 === "peachpuff") {
+                                    return "#000";
+                                } else {
+                                    return "#fff";
+                                }
+                            } else if (!d._children) {
+                                return "#000";
+                            }
+                        })
+                        .style("stroke-width", 0.5)
+                        .text(function (d) {
+                            return d.number.toString();
+                        })
                     }
-                })
-                .attr("dy", ".35em")
-                .attr('font-size', function (d) {
-                    return d.number.toString().length * 1.5 + 5;
-                })
-                .style("stroke", function (d) {
-                    //figure out contrasting text
-                    //var colorHex = toHex(d.color);
-                    var color1 = d.color.toLowerCase();
-                    if (d._children) {
-                        if (color1 === "white" || color1 === "yellow" || color1 === "lightskyblue" || color1 === "orange" || color1 === "gainsboro" || color1 === "limegreen" || color1 === "lightsalmon" || color1 === "lightblue" || color1 === "cyan" || color1 === "lightyellow" || color1 === "peachpuff") {
-                            return "#000";
-                        } else {
-                            return "#fff";
-                        }
-                    } else {
-                        return "#000";
-                    }
-                })
-                .style("stroke-width", 0.5)
-                .text(function (d) {
-                    return d.number.toString();
-                });
+                }
 
-            //use npm contrast library (install using cdn)
-            //colornames library to convert name to hex
-        }
+        displayNum(checkbox);
 
         var clipboard = new ClipboardJS('.clipboard-copy.btn');
 

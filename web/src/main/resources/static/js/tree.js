@@ -229,7 +229,7 @@ var tree = (function () {
     function initDataAndTree() {
 
         tree = d3.layout.tree()
-            .nodeSize([30, null]);
+            .nodeSize([33, null]);
 
         diagonal = d3.svg.diagonal()
             .projection(function (d) {
@@ -624,7 +624,7 @@ var tree = (function () {
 
         nodeUpdate.select("circle")
             .attr("r", function (d) {
-                return d.number.toString().length * 3.5;
+                return d.number.toString().length * 4;
             })
             .style("fill", function (d) {
                 return d._children ? d.color : "#fff";
@@ -644,7 +644,7 @@ var tree = (function () {
 
         nodeExit.select("circle")
             .attr("r", function (d) {
-                return d.number.toString().length * 3.5;
+                return d.number.toString().length * 4;
             });
 
         nodeExit.select("text")

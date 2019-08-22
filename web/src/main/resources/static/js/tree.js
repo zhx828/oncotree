@@ -592,7 +592,7 @@ var tree = (function () {
                         .attr('font-size', function (d) {
                             return d.number.toString().length * 1.5 + 5;
                         })
-                        .style("stroke", function (d) {
+                        .style("fill", function (d) {
                             var color1 = d.color.toLowerCase();
                             if (d._children) {
                                 if (color1 === "white" || color1 === "yellow" || color1 === "lightskyblue" || color1 === "orange" || color1 === "gainsboro" || color1 === "limegreen" || color1 === "lightsalmon" || color1 === "lightblue" || color1 === "cyan" || color1 === "lightyellow" || color1 === "peachpuff") {
@@ -604,7 +604,7 @@ var tree = (function () {
                                 return "#000";
                             }
                         })
-                        .style("stroke-width", 0.5)
+                        .style("stroke-width", 0)
                         .text(function (d) {
                             return d.number.toString();
                         })
